@@ -85,7 +85,8 @@ def get_status(row):
 
 df['Status'] = df.apply(get_status, axis=1)
 
-fig = px.scatter(df, x='X', y='Y', text='Table_ID', size=[25]*len(df),
+# Change the number "size=[xx]" to change diameter of table
+fig = px.scatter(df, x='X', y='Y', text='Table_ID', size=[45]*len(df),
                  color='Status',
                  color_discrete_map={"🟢 Available": "#2ecc71", "🟡 Nearly Full": "#f1c40f", "🔴 Sold Out": "#e74c3c"},
                  hover_name="Table_ID",
