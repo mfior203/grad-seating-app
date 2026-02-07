@@ -71,7 +71,15 @@ with st.sidebar:
             
             # STEP 2: SECURITY GATE
             # Asks for the Access_Code from your Google Sheet. type="password" hides input.
-            user_code = st.text_input("3. Enter your Access Code:", type="password")
+            # We use a unique 'key' and a custom label to discourage browser autofill
+user_code = st.text_input(
+    "3. Verification Code:", 
+    type="password", 
+    key="user_access_code_gate", # Unique key stops some browsers from remembering
+    help="Enter the code provided on your ticket receipt.",
+    autocomplete="new-password" # Signals to the browser NOT to suggest old passwords
+)
+
             
             # Check if user input matches the code in the spreadsheet
             if str(user_code) == str(student_info['Access_Code']):
