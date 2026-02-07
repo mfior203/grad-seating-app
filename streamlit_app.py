@@ -199,3 +199,53 @@ st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 with st.expander("Show Detailed Seating List (Table View)"):
     display_df = df[['Table_ID', 'Remaining', 'Guest_List']].copy()
     st.dataframe(display_df, hide_index=True, use_container_width=True)
+
+
+# --- SIDEBAR: SECURE BOOKING ---
+with st.sidebar:
+    st.header("🎫 Reserve Your Table")
+    
+    # 1. Selection logic (The "Sign-in")
+    last_names = sorted(student_df['Last Name'].unique().tolist())
+    sel_last = st.selectbox("Your Last Name:", [""] + last_names)
+    
+    if sel_last:
+        filtered_firsts = student_df[student_df['Last Name'] == sel_last]['First Name'].tolist()
+        sel_first = st.selectbox("Your First Name:", [""] + filtered_firsts)
+        
+        if sel_first:
+            full_name = f"{sel_first} {sel_last}"
+            student_info = student_df[(student_df['Last Name'] == sel_last) & (student_df['First Name'] == sel_first)].iloc[0]
+            
+            # --- THIS IS THE 'ONLY SEE THEIR TICKETS' PART ---
+            ticket_count = int(student_info['Tickets'])
+            st.success(f"Verified: **{full_name}**")
+            st.info(f"You are authorized for **{ticket_count}** seats.")
+            
+            # Check for double booking
+            already_seated_row = df[df['Guest_List'].str.contains(full_name, na=False)]
+            
+            if not already_seated_row.empty:
+                assigned_table = already_seated_row.iloc[0]['Table_ID']
+                st.warning(f"You are already at Table {assigned_table}")
+            else:
+                # 2. Only show booking options once name is selected
+                df['Remaining'] = df['Capacity'] - df['Taken']
+                valid_tables = df[df['Remaining'] >= ticket_count]
+                
+                if not valid_tables.empty:
+                    selection = st.selectbox("Select a table with enough space:", valid_tables['Table_ID'])
+                    if st.button("Confirm This Table", use_container_width=True, type="primary"):
+                        # ... (Update logic remains the same)
+                        idx = df[df['Table_ID'] == selection].index[0]
+                        df.at[idx, 'Taken'] += ticket_count
+                        current_list = str(df.at[idx, 'Guest_List']) if pd.notna(df.at[idx, 'Guest_List']) and df.at[idx, 'Guest_List'] != "nan" else ""
+                        df.at[idx, 'Guest_List'] = current_list + f"{full_name} ({ticket_count}), "
+                        conn.update(worksheet="Tables", data=df)
+                        st.balloons()
+                        st.rerun()
+                else:
+                    st.error("Sorry, no tables have enough room for your group.")
+    else:
+        # What they see before they "sign in"
+        st.write("Please select your name to begin booking.")
