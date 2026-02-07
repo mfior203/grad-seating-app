@@ -136,23 +136,26 @@ with st.sidebar:
     st.sidebar.caption("📩 **Support**")
     st.sidebar.write("Contact the Grad Committee for issues:")
     st.sidebar.write("[your.email@example.com]")
-
 # -----------------------------------------------------------------------------
 # 5. VISUAL MAP GENERATION
 # This part draws the room layout using the X and Y coordinates from your sheet.
 # -----------------------------------------------------------------------------
 st.markdown("### 🗺️ Room Layout")
 
-# Logic to determine circle colors
+# FORCE THE MATH: Ensure 'Remaining' is always Capacity minus Taken
+df['Remaining'] = df['Capacity'] - df['Taken']
+
+# Logic to determine circle colors based on the FRESH math above
 def get_status(row):
-    rem = row['Capacity'] - row['Taken']
-    if rem <= 0: return "🔴 Sold Out"
-    if rem < 3: return "🟡 Nearly Full"
+    if row['Remaining'] <= 0: 
+        return "🔴 Sold Out"
+    if row['Remaining'] <= 4: 
+        return "🟡 Nearly Full"
     return "🟢 Available"
 
 df['Status'] = df.apply(get_status, axis=1)
 
-# Create the Scatter Plot (The Map)
+# Create the Scatter Plot
 fig = px.scatter(
     df, x='X', y='Y', text='Table_ID',
     color='Status',
@@ -162,7 +165,8 @@ fig = px.scatter(
         "🔴 Sold Out": "#e74c3c"
     },
     hover_name="Table_ID",
-    hover_data={"Remaining": True, "Guest_List": True, "X": False, "Y": False}
+    # We explicitly tell the hover box to use the calculated 'Remaining' column
+    hover_data={"Remaining": True, "Guest_List": True, "X": False, "Y": False, "Status": False}
 )
 
 # -----------------------------------------------------------------------------
@@ -171,14 +175,9 @@ fig = px.scatter(
 # sizeref: Lower numbers make circles BIGGER. 0.1 is standard.
 # -----------------------------------------------------------------------------
 fig.update_traces(
-    marker=dict(
-        size=60, 
-        sizemode='area', 
-        sizeref=0.1, 
-        line=dict(width=2, color='white') # White border around circles
-    ),
+    marker=dict(size=60, sizemode='area', sizeref=0.1, line=dict(width=2, color='white')),
     textposition='middle center',
-    textfont=dict(size=14, color="white")
+    textfont=dict(size=14, color="white")# White border around circles
 )
 
 # Set the "room" boundaries so circles don't touch the very edges of the screen
